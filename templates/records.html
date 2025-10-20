@@ -1,0 +1,288 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2><i class="fas fa-chart-line me-2 text-primary"></i>Attendance Records</h2>
+        <p class="text-muted mb-0">Class: <strong>{{ class_.name }}</strong></p>
+        {% if class_.start_time and class_.end_time %}
+        <small class="text-info">
+            <i class="fas fa-clock me-1"></i>
+            Schedule: {{ class_.start_time.strftime('%I:%M %p') }} - {{ class_.end_time.strftime('%I:%M %p') }}
+        </small>
+        {% endif %}
+    </div>
+    <div>
+        <a href="{{ url_for('view_classes') }}" class="btn btn-secondary me-2">
+            <i class="fas fa-arrow-left me-2"></i>Back to Classes
+        </a>
+        <a href="{{ url_for('export_records', class_id=class_.id) }}" class="btn btn-success">
+            <i class="fas fa-download me-2"></i>Export CSV
+        </a>
+    </div>
+</div>
+
+<!-- Filter Section -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Filter Records</h5>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label for="date" class="form-label">Filter by Date</label>
+                    <input type="date" class="form-control" id="date" name="date" value="{{ date_filter or '' }}">
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search me-1"></i>Apply Filter
+                    </button>
+                    {% if date_filter %}
+                    <a href="{{ url_for('attendance_records', class_id=class_.id) }}"
+                        class="btn btn-outline-secondary ms-2">
+                        <i class="fas fa-times me-1"></i>Clear
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="col-md-6 text-end">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Total Records: <strong>{{ records|length }}</strong>
+                    </small>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Records Table -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-table me-2"></i>Attendance Details</h5>
+    </div>
+    <div class="card-body p-0">
+        {% if records %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th><i class="fas fa-calendar me-1"></i>Date</th>
+                        <th><i class="fas fa-user me-1"></i>Student</th>
+                        <th><i class="fas fa-clock me-1"></i>Scan Time</th>
+                        <th><i class="fas fa-sign-in-alt me-1"></i>Arrival Time</th>
+                        <th><i class="fas fa-flag me-1"></i>Status</th>
+                        <th><i class="fas fa-hourglass-half me-1"></i>Late Details</th>
+                        <th><i class="fas fa-sticky-note me-1"></i>Notes</th>
+                        <th><i class="fas fa-cog me-1"></i>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in records %}
+                    {% set student = students[record.student_id] if record.student_id in students else None %}
+                    <tr>
+                        <td>
+                            <span class="fw-bold">{{ record.date.strftime('%Y-%m-%d') if record.date else 'N/A'
+                                }}</span><br>
+                            <small class="text-muted">{{ record.date.strftime('%A') if record.date else '' }}</small>
+                        </td>
+                        <td>
+                            {% if student %}
+                            <div class="d-flex align-items-center">
+                                {% if student.photo_path %}
+                                <img src="/{{ student.photo_path }}" alt="{{ student.name }}"
+                                    class="rounded-circle me-2" width="32" height="32" style="object-fit: cover;">
+                                {% else %}
+                                <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center me-2"
+                                    style="width: 32px; height: 32px; color: white; font-weight: bold; font-size: 0.8rem;">
+                                    {{ student.name[0].upper() }}
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <div class="fw-bold">{{ student.name }}</div>
+                                    <small class="text-muted">{{ student.student_number }}</small>
+                                </div>
+                            </div>
+                            {% else %}
+                            <span class="text-muted">Unknown Student</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if record.scan_time %}
+                            <span class="badge bg-info">
+                                <i class="fas fa-qrcode me-1"></i>
+                                {{ record.scan_time.strftime('%I:%M:%S %p') }}
+                            </span>
+                            {% else %}
+                            <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if record.arrival_time %}
+                            <span class="badge bg-primary">
+                                <i class="fas fa-door-open me-1"></i>
+                                {{ record.arrival_time.strftime('%I:%M:%S %p') }}
+                            </span>
+                            {% else %}
+                            <span class="text-muted">Same as scan</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if record.status == 'Present' %}
+                            <span class="badge bg-success">
+                                <i class="fas fa-check-circle me-1"></i>Present
+                            </span>
+                            {% elif record.status == 'Late' %}
+                            <span class="badge bg-warning text-dark">
+                                <i class="fas fa-clock me-1"></i>Late
+                            </span>
+                            {% elif record.status == 'Absent' %}
+                            <span class="badge bg-danger">
+                                <i class="fas fa-times-circle me-1"></i>Absent
+                            </span>
+                            {% elif record.status == 'Excused' %}
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-secondary me-2">
+                                    <i class="fas fa-exclamation-circle me-1"></i>Excused
+                                </span>
+                                {% if record.excuse_request_id %}
+                                {% if record.excuse_request.status == 'Approved' %}
+                                <span class="badge bg-success badge-sm">
+                                    <i class="fas fa-check-circle me-1"></i>Approved
+                                </span>
+                                {% elif record.excuse_request.status == 'Disapproved' %}
+                                <span class="badge bg-danger badge-sm">
+                                    <i class="fas fa-times-circle me-1"></i>Disapproved
+                                </span>
+                                {% elif record.excuse_request.status == 'Pending' %}
+                                <span class="badge bg-warning badge-sm text-dark">
+                                    <i class="fas fa-clock me-1"></i>Pending
+                                </span>
+                                {% else %}
+                                <span class="badge bg-warning badge-sm text-dark">
+                                    <i class="fas fa-clock me-1"></i>Pending
+                                </span>
+                                {% endif %}
+                                {% else %}
+                                <span class="badge bg-warning badge-sm text-dark">
+                                    <i class="fas fa-clock me-1"></i>Pending
+                                </span>
+                                {% endif %}
+                            </div>
+                            {% elif record.status == 'Absent' %}
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-danger me-2">
+                                    <i class="fas fa-times-circle me-1"></i>Absent
+                                </span>
+                                {% if record.excuse_request_id and record.excuse_request.status == 'Disapproved' %}
+                                <span class="badge bg-danger badge-sm">
+                                    <i class="fas fa-times-circle me-1"></i>Excuse Denied
+                                </span>
+                                {% endif %}
+                            </div>
+                            {% else %}
+                            <span class="badge bg-light text-dark">{{ record.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% set status_info = get_arrival_status(record.arrival_time, class_.start_time) %}
+                            <span class="{{ status_info.badge_class }}">
+                                <i class="{{ status_info.icon }} me-1"></i>
+                                {{ status_info.display_text }}
+                            </span>
+                            {% if record.arrival_time and class_.start_time %}
+                            <br><small class="text-muted">
+                                Arrived: {{ record.arrival_time.strftime('%I:%M %p') }}
+                                {% if status_info.status == 'late' %}
+                                | Expected: {{ class_.start_time.strftime('%I:%M %p') }}
+                                {% endif %}
+                            </small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if record.notes %}
+                            <span class="text-muted" data-bs-toggle="tooltip" title="{{ record.notes }}">
+                                <i class="fas fa-sticky-note"></i>
+                                {{ record.notes[:20] }}{% if record.notes|length > 20 %}...{% endif %}
+                            </span>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('edit_attendance', attendance_id=record.id) }}"
+                                class="btn btn-sm btn-outline-primary" title="Edit Record">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">No Attendance Records Found</h5>
+            <p class="text-muted">{% if date_filter %}No records found for the selected date.{% else %}No attendance has
+                been recorded for this class yet.{% endif %}</p>
+            <a href="{{ url_for('take_attendance', class_id=class_.id) }}" class="btn btn-primary">
+                <i class="fas fa-qrcode me-2"></i>Take Attendance
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Summary Statistics -->
+{% if records %}
+<div class="row mt-4">
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-check-circle fa-2x mb-2"></i>
+                <h4>{{ records|selectattr('status', 'equalto', 'Present')|list|length }}</h4>
+                <small>Present</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body text-center">
+                <i class="fas fa-clock fa-2x mb-2"></i>
+                <h4>{{ records|selectattr('status', 'equalto', 'Late')|list|length }}</h4>
+                <small>Late Arrivals</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-times-circle fa-2x mb-2"></i>
+                <h4>{{ records|selectattr('status', 'equalto', 'Absent')|list|length }}</h4>
+                <small>Absent</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-secondary text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-exclamation-circle fa-2x mb-2"></i>
+                <h4>{{ records|selectattr('status', 'equalto', 'Excused')|list|length }}</h4>
+                <small>Excused</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+    // Initialize tooltips
+    document.addEventListener('DOMContentLoaded', function () {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+</script>
+
+{% endblock %}

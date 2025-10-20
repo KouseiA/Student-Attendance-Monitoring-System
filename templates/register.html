@@ -1,0 +1,53 @@
+{% extends 'login_base.html' %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow-lg border-0">
+            <div class="card-header text-center py-4">
+                <div class="qr-scanner-icon mx-auto mb-3">
+                    <i class="fas fa-user-plus"></i>
+                </div>
+                <h3 class="mb-0 text-white">Create Account</h3>
+                <p class="mb-0 text-white-50">Join our attendance system</p>
+            </div>
+            <div class="card-body p-4">
+                <form method="post">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">
+                            <i class="fas fa-user me-2 text-primary"></i>Username
+                        </label>
+                        <input type="text" class="form-control" id="username" name="username"
+                            placeholder="Choose a username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">
+                            <i class="fas fa-lock me-2 text-primary"></i>Password
+                        </label>
+                        <input type="password" class="form-control" id="password" name="password"
+                            placeholder="Create a password" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="confirm" class="form-label">
+                            <i class="fas fa-lock me-2 text-primary"></i>Confirm Password
+                        </label>
+                        <input type="password" class="form-control" id="confirm" name="confirm"
+                            placeholder="Confirm your password" required>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-user-plus me-2"></i>Create Account
+                        </button>
+                    </div>
+                </form>
+                <hr class="my-4">
+                <div class="text-center">
+                    <p class="mb-2">Already have an account?</p>
+                    <a href="{{ url_for('login') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

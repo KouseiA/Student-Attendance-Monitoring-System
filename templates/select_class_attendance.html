@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Select Class for Attendance</h2>
+<form method="post">
+    <div class="mb-3">
+        <label class="form-label">Current Time:</label>
+        <div id="current-time" class="mb-2"></div>
+        <label for="attendance_date" class="form-label">Date:</label>
+        <input type="text" class="form-control mb-3" id="attendance_date" name="attendance_date"
+            placeholder="Select date" required>
+        <label for="class_id" class="form-label">Class</label>
+        <select class="form-select" id="class_id" name="class_id" required>
+            <option value="" disabled selected>Select a class</option>
+            {% for class_ in classes %}
+            <option value="{{ class_.id }}">{{ class_.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <button type="submit" class="btn btn-success">Proceed to Attendance</button>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+</form>
+<!-- Flatpickr Material Blue Theme CSS/JS -->
+<link rel="stylesheet" href="{{ url_for('static', filename='libs/flatpickr/material_blue.css') }}">
+<script src="{{ url_for('static', filename='libs/flatpickr/flatpickr.min.js') }}"></script>
+<script>
+    // Show current time and update every second
+    function updateTime() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString();
+        document.getElementById('current-time').textContent = timeString;
+    }
+    setInterval(updateTime, 1000);
+    updateTime();
+    // Initialize Flatpickr for calendar UI with improved design
+    flatpickr("#attendance_date", {
+        dateFormat: "Y-m-d",
+        defaultDate: new Date(),
+        allowInput: true,
+        altInput: true,
+        altFormat: "F j, Y",
+        monthSelectorType: 'dropdown',
+        yearSelectorType: 'dropdown',
+    });
+</script>
+{% endblock %}

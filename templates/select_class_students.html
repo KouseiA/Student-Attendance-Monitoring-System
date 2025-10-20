@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Select Class to Manage Students</h2>
+<form method="post">
+    <div class="mb-3">
+        <label for="class_id" class="form-label">Class</label>
+        <select class="form-select" id="class_id" name="class_id" required>
+            <option value="" disabled selected>Select a class</option>
+            {% for class_ in classes %}
+            <option value="{{ class_.id }}">{{ class_.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <button type="submit" class="btn btn-success">Manage Students</button>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+</form>
+{% endblock %}

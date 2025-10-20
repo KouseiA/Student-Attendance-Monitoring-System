@@ -1,0 +1,19 @@
+<div class="col-md-3">
+    <label class="form-label">Cartoon Avatar</label>
+    <div class="avatar-grid">
+        {% for i in range(1,7) %}
+        <div class="avatar-option" onclick="selectAvatar('avatar{{i}}.png', this)">
+            <img src="/static/avatars/avatar{{i}}.png" alt="Avatar {{i}}">
+        </div>
+        {% endfor %}
+    </div>
+    <input type="hidden" name="avatar" id="avatar-input">
+    <div class="form-text">Or upload a photo below</div>
+</div>
+<script>
+    function selectAvatar(filename, el) {
+        document.getElementById('avatar-input').value = filename;
+        document.querySelectorAll('.avatar-option').forEach(opt => opt.classList.remove('selected'));
+        el.classList.add('selected');
+    }
+</script>

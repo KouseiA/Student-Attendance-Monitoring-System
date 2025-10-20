@@ -1,0 +1,590 @@
+{% extends 'base.html' %}
+{% block content %}
+<!-- Welcome Section -->
+<div class="dashboard-welcome position-relative dashboard-welcome-animated">
+    <div class="qr-scanner-icon">
+        <i class="fas fa-graduation-cap"></i>
+    </div>
+    <h1 class="dashboard-welcome-title">
+        Welcome, {{ teacher_name }}! <span role="img" aria-label="wave">👋</span>
+    </h1>
+    <p class="dashboard-welcome-subtitle">
+        Ready for a great day?
+    </p>
+    <div id="confetti"></div>
+</div>
+<script>
+    // Confetti animation
+    function randomEmoji() {
+        const emojis = ['🎉', '✨', '🎊', '🥳', '🌟', '🎈'];
+        return emojis[Math.floor(Math.random() * emojis.length)];
+    }
+    function showConfetti() {
+        const confetti = document.getElementById('confetti');
+        if (!confetti) return;
+        confetti.innerHTML = '';
+        for (let i = 0; i < 18; i++) {
+            const span = document.createElement('span');
+            span.textContent = randomEmoji();
+            span.className = 'confetti-emoji';
+            span.style.left = Math.random() * 100 + '%';
+            span.style.top = Math.random() * 80 + '%';
+            span.style.fontSize = (Math.random() * 1.5 + 1.2) + 'rem';
+            span.style.animationDelay = Math.random() + 's';
+            confetti.appendChild(span);
+        }
+        setTimeout(() => { confetti.innerHTML = ''; }, 2200);
+    }
+    document.addEventListener('DOMContentLoaded', showConfetti);
+</script>
+<style>
+    @keyframes bounceIn {
+        0% {
+            transform: scale(0.7);
+            opacity: 0;
+        }
+
+        60% {
+            transform: scale(1.1);
+            opacity: 1;
+        }
+
+        80% {
+            transform: scale(0.95);
+        }
+
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    @keyframes confetti-fall {
+        0% {
+            transform: translateY(-40px) rotate(-10deg);
+            opacity: 0.7;
+        }
+
+        80% {
+            opacity: 1;
+        }
+
+        100% {
+            transform: translateY(120px) rotate(10deg);
+            opacity: 0;
+        }
+    }
+
+    #confetti span {
+        animation-name: confetti-fall;
+    }
+</style>
+
+<!-- Enhanced Stats Overview -->
+{% if (analytics and analytics|length > 0) or (total_present + total_late + total_absent + total_excused > 0) %}
+<div class="row mb-4">
+    <!-- Today's Attendance Summary only -->
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stats-card present">
+            <div class="stats-number">{{ total_present }}</div>
+            <div class="stats-label"><i class="fas fa-check-circle me-1"></i>Present {% if date_range == 'today'
+                %}Today{% else %}{{ date_range|title }}{% endif %}</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stats-card absent">
+            <div class="stats-number">{{ total_absent }}</div>
+            <div class="stats-label"><i class="fas fa-times-circle me-1"></i>Absent {% if date_range == 'today'
+                %}Today{% else %}{{ date_range|title }}{% endif %}</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stats-card" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+            <div class="stats-number">{{ total_late }}</div>
+            <div class="stats-label"><i class="fas fa-clock me-1"></i>Late {% if date_range == 'today' %}Today{% else
+                %}{{ date_range|title }}{% endif %}</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stats-card excused">
+            <div class="stats-number">{{ total_excused }}</div>
+            <div class="stats-label"><i class="fas fa-clock me-1"></i>Pending Excuses {% if date_range == 'today'
+                %}Today{% else %}{{ date_range|title }}{% endif %}</div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+
+<!-- Real-time Status and Recent Activity -->
+<div class="row mb-4">
+    {% if classes_in_session or upcoming_classes %}
+    <!-- Classes Status -->
+    {% if classes_in_session %}
+    <div class="col-lg-4 mb-3">
+        <div class="card border-success">
+            <div class="card-header bg-success text-white">
+                <h6 class="mb-0"><i class="fas fa-play-circle me-2"></i>Classes In Session</h6>
+            </div>
+            <div class="card-body">
+                {% for item in classes_in_session %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                        <strong>{{ item.class.name }}</strong>
+                        <small class="text-muted d-block">{{ item.class.start_time.strftime('%I:%M %p') }} - {{
+                            item.class.end_time.strftime('%I:%M %p') }}</small>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-primary">{{ item.present_count }}/{{ item.total_students }} present</span>
+                        <div class="mt-1">
+                            <small class="text-muted">{{ item.attendance_count }} recorded today</small>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if upcoming_classes %}
+    <div class="col-lg-4 mb-3">
+        <div class="card border-info">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="fas fa-clock me-2"></i>Upcoming Classes</h6>
+            </div>
+            <div class="card-body">
+                {% for item in upcoming_classes %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                        <strong>{{ item.class.name }}</strong>
+                        <small class="text-muted d-block">Starts {{ item.class.start_time.strftime('%I:%M %p')
+                            }}</small>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-warning text-dark">in {{ item.starts_in }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recent Activity Feed - REMOVED -->
+    {% if recent_activities %}
+    <!-- Recent Activity section removed per user request -->
+    {% endif %}
+    {% else %}
+    <!-- Today's Overview when no classes are in session -->
+    <div class="col-12 mb-3">
+        <div class="card bg-light">
+            <div class="card-body text-center py-4">
+                <i class="fas fa-sun text-warning mb-3" style="font-size: 3rem;"></i>
+                <h4>Ready for a productive day!</h4>
+                <p class="text-muted mb-0">No classes currently in session. Use the quick actions above to get started.
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Analytics Preview Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card bg-gradient-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-1"><i class="fas fa-chart-line me-2"></i>Enhanced Analytics Available</h5>
+                        <p class="mb-0 opacity-75">Get deeper insights with advanced reporting and visualizations</p>
+                    </div>
+                    <div class="text-end">
+                        <a href="{{ url_for('analytics_dashboard') }}" class="btn btn-light btn-lg">
+                            <i class="fas fa-chart-bar me-2"></i>View Analytics
+                        </a>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-3 text-center">
+                        <div class="h6 mb-0">📊</div>
+                        <small class="opacity-75">Trend Analysis</small>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="h6 mb-0">🎯</div>
+                        <small class="opacity-75">Risk Prediction</small>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="h6 mb-0">📈</div>
+                        <small class="opacity-75">Performance Tracking</small>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="h6 mb-0">📋</div>
+                        <small class="opacity-75">Detailed Reports</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Enhanced Date Range Filter -->
+{% if analytics and analytics|length > 0 %}
+<div class="card p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+        <h4 class="mb-0">Enhanced Attendance Analytics</h4>
+        <form method="get" class="d-flex align-items-center flex-wrap gap-2">
+            <label for="date_range" class="me-2 mb-0">Period:</label>
+            <select name="date_range" id="date_range" class="form-select form-select-sm me-2"
+                onchange="toggleCustomDates()">
+                <option value="today" {% if date_range=='today' %}selected{% endif %}>Today</option>
+                <option value="week" {% if date_range=='week' %}selected{% endif %}>This Week</option>
+                <option value="month" {% if date_range=='month' %}selected{% endif %}>This Month</option>
+                <option value="custom" {% if date_range=='custom' %}selected{% endif %}>Custom Range</option>
+            </select>
+
+            <div id="customDates" style="display: {% if date_range == 'custom' %}flex{% else %}none{% endif %};"
+                class="gap-2">
+                <input type="date" name="start_date" class="form-control form-control-sm" value="{{ start_date or '' }}"
+                    aria-label="Start date">
+                <input type="date" name="end_date" class="form-control form-control-sm" value="{{ end_date or '' }}"
+                    aria-label="End date">
+            </div>
+
+            <label for="class_id" class="me-2 mb-0">Class:</label>
+            <select name="class_id" id="class_id" class="form-select form-select-sm me-2">
+                <option value="all" {% if class_id=='all' %}selected{% endif %}>All Classes</option>
+                {% for c in classes %}
+                <option value="{{ c.id }}" {% if class_id|int==c.id %}selected{% endif %}>{{ c.name }}</option>
+                {% endfor %}
+            </select>
+
+            <button type="submit" class="btn btn-primary btn-sm">Update</button>
+        </form>
+    </div>
+
+    <!-- Performance Metrics Row -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white text-center">
+                <div class="card-body py-3">
+                    <h4 class="mb-1">{{ overall_rate }}%</h4>
+                    <small>Overall Attendance Rate</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div
+                class="card {% if month_comparison >= 0 %}bg-success{% else %}bg-danger{% endif %} text-white text-center">
+                <div class="card-body py-3">
+                    <h4 class="mb-1">{{ month_comparison|abs }}%</h4>
+                    <small>{% if month_comparison >= 0 %}↑{% else %}↓{% endif %} vs Last Month</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white text-center">
+                <div class="card-body py-3">
+                    <h4 class="mb-1">{{ current_month_rate }}%</h4>
+                    <small>This Month</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-secondary text-white text-center">
+                <div class="card-body py-3">
+                    <h4 class="mb-1">{{ prev_month_rate }}%</h4>
+                    <small>Last Month</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Charts -->
+    <div class="row">
+        <div class="col-lg-8">
+            <h5 class="text-center mb-3">Attendance by Class</h5>
+            <canvas id="attendanceChart" height="100"></canvas>
+        </div>
+        <div class="col-lg-4">
+            <h5 class="text-center mb-3">Distribution</h5>
+            <canvas id="attendancePie" height="180"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Weekly Trends Analysis -->
+<div class="card p-4 mb-4">
+    <h4 class="mb-3">7-Day Attendance Trends</h4>
+    <canvas id="weeklyTrendChart" height="120"></canvas>
+</div>
+
+<!-- Class Performance Details -->
+<div class="card p-4 mb-4">
+    <h4 class="mb-3">Class Performance Details</h4>
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th>Class Name</th>
+                    <th>Present</th>
+                    <th>Late</th>
+                    <th>Absent</th>
+                    <th>Pending Excuses</th>
+                    <th>Attendance Rate</th>
+                    <th>Performance</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for class_data in analytics %}
+                <tr>
+                    <td><strong>{{ class_data.class_name }}</strong></td>
+                    <td><span class="badge bg-success">{{ class_data.present }}</span></td>
+                    <td><span class="badge bg-warning text-dark">{{ class_data.late }}</span></td>
+                    <td><span class="badge bg-danger">{{ class_data.absent }}</span></td>
+                    <td><span class="badge bg-secondary">{{ class_data.excused }}</span></td>
+                    <td>
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar {% if class_data.attendance_rate >= 90 %}bg-success{% elif class_data.attendance_rate >= 75 %}bg-warning{% else %}bg-danger{% endif %}"
+                                style="width: {{ class_data.attendance_rate }}%">
+                                {{ class_data.attendance_rate }}%
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        {% if class_data.attendance_rate >= 90 %}
+                        <span class="badge bg-success"><i class="fas fa-star"></i> Excellent</span>
+                        {% elif class_data.attendance_rate >= 75 %}
+                        <span class="badge bg-warning text-dark"><i class="fas fa-thumbs-up"></i> Good</span>
+                        {% else %}
+                        <span class="badge bg-danger"><i class="fas fa-exclamation-triangle"></i> Needs Attention</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if analytics and analytics|length > 0 %}
+<script src="{{ url_for('static', filename='js/chart.umd.min.js') }}"></script>
+<script>
+    // Toggle custom date inputs
+    function toggleCustomDates() {
+        const dateRange = document.getElementById('date_range').value;
+        const customDates = document.getElementById('customDates');
+        customDates.style.display = dateRange === 'custom' ? 'flex' : 'none';
+    }
+
+    (function () {
+        const analytics = {{ analytics| tojson
+    }};
+    const weeklyTrends = {{ weekly_trends| tojson }};
+
+    // Enhanced Bar Chart with tooltips
+    const labels = analytics.map(a => a.class_name);
+    const present = analytics.map(a => a.present);
+    const late = analytics.map(a => a.late || 0);
+    const absent = analytics.map(a => a.absent);
+    const excused = analytics.map(a => a.excused);
+    const rates = analytics.map(a => a.attendance_rate);
+
+    const ctx = document.getElementById('attendanceChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Present',
+                    data: present,
+                    backgroundColor: '#198754',
+                    borderColor: '#146c43',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Late',
+                    data: late,
+                    backgroundColor: '#f59e0b',
+                    borderColor: '#d97706',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Absent',
+                    data: absent,
+                    backgroundColor: '#dc3545',
+                    borderColor: '#b02a37',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Pending Excuses',
+                    data: excused,
+                    backgroundColor: '#6c757d',
+                    borderColor: '#565e64',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        padding: 20
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        afterLabel: function (context) {
+                            const classIndex = context.dataIndex;
+                            const rate = rates[classIndex];
+                            return 'Attendance Rate: ' + rate + '%';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    }
+                },
+                x: {
+                    ticks: {
+                        maxRotation: 45
+                    }
+                }
+            },
+            animation: {
+                duration: 1000,
+                easing: 'easeInOutQuart'
+            }
+        }
+    });
+
+    // Enhanced Pie Chart
+    const pieCtx = document.getElementById('attendancePie').getContext('2d');
+    new Chart(pieCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Present', 'Late', 'Absent', 'Pending Excuses'],
+            datasets: [{
+                data: [{{ total_present }}, {{ total_late }}, {{ total_absent }}, {{ total_excused }}],
+        backgroundColor: ['#198754', '#f59e0b', '#dc3545', '#6c757d'],
+        borderColor: '#ffffff',
+        borderWidth: 2,
+        hoverOffset: 4
+                }]
+            },
+        options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    usePointStyle: true,
+                    padding: 15
+                }
+            },
+            tooltip: {
+                callbacks: {
+                    label: function (context) {
+                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                        const percentage = ((context.parsed * 100) / total).toFixed(1);
+                        return context.label + ': ' + context.parsed + ' (' + percentage + '%)';
+                    }
+                }
+            }
+        },
+        animation: {
+            animateRotate: true,
+            duration: 1000
+        }
+    }
+        });
+
+    // Weekly Trends Line Chart
+    const trendCtx = document.getElementById('weeklyTrendChart').getContext('2d');
+    new Chart(trendCtx, {
+        type: 'line',
+        data: {
+            labels: weeklyTrends.map(d => d.day_name + ' ' + d.date),
+            datasets: [{
+                label: 'Attendance Rate (%)',
+                data: weeklyTrends.map(d => d.rate),
+                borderColor: '#2563eb',
+                backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: '#2563eb',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                pointRadius: 6,
+                pointHoverRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        title: function (context) {
+                            const index = context[0].dataIndex;
+                            return weeklyTrends[index].day_name + ', ' + weeklyTrends[index].date;
+                        },
+                        label: function (context) {
+                            const index = context.dataIndex;
+                            const day = weeklyTrends[index];
+                            return [
+                                'Attendance Rate: ' + day.rate + '%',
+                                'Present: ' + day.present,
+                                'Late: ' + day.late,
+                                'Absent: ' + day.absent,
+                                'Pending Excuses: ' + (day.excused || 0)
+                            ];
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        callback: function (value) {
+                            return value + '%';
+                        }
+                    }
+                },
+                x: {
+                    ticks: {
+                        maxRotation: 45
+                    }
+                }
+            },
+            animation: {
+                duration: 1500,
+                easing: 'easeInOutQuart'
+            }
+        }
+    });
+        
+    }) ();
+</script>
+{% endif %}
+{% endblock %}

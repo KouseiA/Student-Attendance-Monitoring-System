@@ -1,0 +1,476 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/analytics.css') }}">
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-chart-line me-2"></i>Enhanced Analytics Dashboard</h2>
+            <p class="text-muted mb-0">Deep insights into attendance patterns and trends</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('analytics_dashboard') }}?format=export" class="btn btn-outline-primary">
+                <i class="fas fa-download me-1"></i>Export Report
+            </a>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label for="days" class="form-label">Time Period</label>
+                    <select name="days" id="days" class="form-select">
+                        <option value="7" {% if selected_days==7 %}selected{% endif %}>Last 7 days</option>
+                        <option value="30" {% if selected_days==30 %}selected{% endif %}>Last 30 days</option>
+                        <option value="60" {% if selected_days==60 %}selected{% endif %}>Last 60 days</option>
+                        <option value="90" {% if selected_days==90 %}selected{% endif %}>Last 90 days</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="class_id" class="form-label">Class Filter</label>
+                    <select name="class_id" id="class_id" class="form-select">
+                        <option value="all" {% if selected_class_id=='all' %}selected{% endif %}>All Classes</option>
+                        {% for class in classes %}
+                        <option value="{{ class.id }}" {% if selected_class_id==class.id|string %}selected{% endif %}>
+                            {{ class.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter me-1"></i>Apply Filters
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Key Metrics Row -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ student_summaries|length }}</h4>
+                            <p class="mb-0">Students Analyzed</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-users fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ predictive_insights.consistent_performers|length }}</h4>
+                            <p class="mb-0">High Performers</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-star fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ predictive_insights.at_risk_students|length }}</h4>
+                            <p class="mb-0">At-Risk Students</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-exclamation-triangle fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ class_comparison|length }}</h4>
+                            <p class="mb-0">Classes Tracked</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-chalkboard-teacher fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <!-- Attendance Trends Chart -->
+        <div class="col-lg-8 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Attendance Trends Over Time</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="trendsChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Day of Week Analysis -->
+        <div class="col-lg-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-calendar-week me-2"></i>Attendance by Day</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="dayChart" height="150"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Performance and Class Comparison -->
+    <div class="row mb-4">
+        <!-- Student Performance Chart -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-user-graduate me-2"></i>Student Performance</h5>
+                    <small class="text-muted">Top 20 students by attendance rate</small>
+                </div>
+                <div class="card-body">
+                    <canvas id="studentChart" height="120"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Class Comparison -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-balance-scale me-2"></i>Class Comparison</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="classChart" height="120"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Tables -->
+    <div class="row">
+        <!-- At-Risk Students -->
+        {% if predictive_insights.at_risk_students %}
+        <div class="col-lg-6 mb-4">
+            <div class="card border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Students Needing Attention</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Attendance Rate</th>
+                                    <th>Recent Absences</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in predictive_insights.at_risk_students[:10] %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ item.student.name }}</strong><br>
+                                        <small class="text-muted">{{ item.student.student_number }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-danger">{{ item.attendance_rate }}%</span>
+                                    </td>
+                                    <td>{{ item.recent_absences }}/5 days</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary"
+                                            onclick="contactStudent('{{ item.student.id }}')">
+                                            <i class="fas fa-envelope"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Top Performers -->
+        {% if predictive_insights.consistent_performers %}
+        <div class="col-lg-6 mb-4">
+            <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-star me-2"></i>Top Performers</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Attendance Rate</th>
+                                    <th>Recognition</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in predictive_insights.consistent_performers[:10] %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ item.student.name }}</strong><br>
+                                        <small class="text-muted">{{ item.student.student_number }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success">{{ item.attendance_rate }}%</span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-success"
+                                            onclick="recognizeStudent('{{ item.student.id }}')">
+                                            <i class="fas fa-award"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Recommendations -->
+    {% if predictive_insights.recommendations %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-lightbulb me-2"></i>AI Recommendations</h5>
+                </div>
+                <div class="card-body">
+                    {% for rec in predictive_insights.recommendations %}
+                    <div
+                        class="alert alert-{% if rec.priority == 'high' %}warning{% elif rec.priority == 'medium' %}info{% else %}success{% endif %} d-flex align-items-center">
+                        <i
+                            class="fas fa-{% if rec.type == 'intervention' %}exclamation-triangle{% elif rec.type == 'positive' %}check-circle{% else %}info-circle{% endif %} me-2"></i>
+                        <div>{{ rec.message }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // Chart data from backend
+    const chartData = {{ chart_data | tojsonfilter | safe }};
+
+    // Attendance Trends Chart
+    const trendsCtx = document.getElementById('trendsChart').getContext('2d');
+    const trendsLabels = Object.keys(chartData.trends).sort();
+    const trendsDatasets = [
+        {
+            label: 'Present',
+            data: trendsLabels.map(date => chartData.trends[date].Present || 0),
+            borderColor: '#28a745',
+            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+            fill: true
+        },
+        {
+            label: 'Late',
+            data: trendsLabels.map(date => chartData.trends[date].Late || 0),
+            borderColor: '#ffc107',
+            backgroundColor: 'rgba(255, 193, 7, 0.1)',
+            fill: true
+        },
+        {
+            label: 'Absent',
+            data: trendsLabels.map(date => chartData.trends[date].Absent || 0),
+            borderColor: '#dc3545',
+            backgroundColor: 'rgba(220, 53, 69, 0.1)',
+            fill: true
+        }
+    ];
+
+    new Chart(trendsCtx, {
+        type: 'line',
+        data: {
+            labels: trendsLabels.map(date => new Date(date).toLocaleDateString()),
+            datasets: trendsDatasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    stacked: false
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top'
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false
+                }
+            }
+        }
+    });
+
+    // Day of Week Chart
+    if (chartData.day_analysis && chartData.day_analysis.length > 0) {
+        const dayCtx = document.getElementById('dayChart').getContext('2d');
+        new Chart(dayCtx, {
+            type: 'doughnut',
+            data: {
+                labels: chartData.day_analysis.map(d => d.day),
+                datasets: [{
+                    data: chartData.day_analysis.map(d => d.attendance_rate),
+                    backgroundColor: [
+                        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
+                        '#9966FF', '#FF9F40', '#FF6384'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+
+    // Student Performance Chart
+    if (chartData.student_performance && chartData.student_performance.length > 0) {
+        const studentCtx = document.getElementById('studentChart').getContext('2d');
+        new Chart(studentCtx, {
+            type: 'bar',
+            data: {
+                labels: chartData.student_performance.map(s => s.name),
+                datasets: [{
+                    label: 'Attendance Rate (%)',
+                    data: chartData.student_performance.map(s => s.attendance_rate),
+                    backgroundColor: chartData.student_performance.map(s => {
+                        if (s.risk_level === 'high') return '#dc3545';
+                        if (s.risk_level === 'medium') return '#ffc107';
+                        return '#28a745';
+                    })
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
+
+    // Class Comparison Chart
+    if (chartData.class_comparison && chartData.class_comparison.length > 0) {
+        const classCtx = document.getElementById('classChart').getContext('2d');
+        new Chart(classCtx, {
+            type: 'bar',
+            data: {
+                labels: chartData.class_comparison.map(c => c.class_name),
+                datasets: [{
+                    label: 'Attendance Rate (%)',
+                    data: chartData.class_comparison.map(c => c.attendance_rate),
+                    backgroundColor: '#36A2EB'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        });
+    }
+
+    // Action functions
+    function contactStudent(studentId) {
+        // Placeholder for student contact functionality
+        alert('Contact functionality would be implemented here for student ID: ' + studentId);
+    }
+
+    function recognizeStudent(studentId) {
+        // Placeholder for student recognition functionality
+        alert('Recognition functionality would be implemented here for student ID: ' + studentId);
+    }
+</script>
+
+<style>
+    .card {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        border: 1px solid rgba(0, 0, 0, 0.125);
+    }
+
+    .card-header {
+        background-color: rgba(0, 0, 0, 0.03);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+    }
+
+    .table th {
+        border-top: none;
+        font-weight: 600;
+        font-size: 0.875rem;
+    }
+
+    .badge {
+        font-size: 0.75rem;
+    }
+
+    .alert {
+        border: none;
+        border-radius: 0.5rem;
+    }
+</style>
+{% endblock %}

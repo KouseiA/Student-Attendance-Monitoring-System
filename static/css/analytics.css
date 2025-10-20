@@ -1,0 +1,235 @@
+/* Enhanced Analytics Styles */
+
+.bg-gradient-primary {
+  background: linear-gradient(135deg, #007bff, #0056b3) !important;
+}
+
+.analytics-card {
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  border: none;
+  border-radius: 12px;
+}
+
+.analytics-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.chart-container {
+  position: relative;
+  height: 300px;
+  margin: 20px 0;
+}
+
+.metric-card {
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  border-radius: 10px;
+  padding: 1.5rem;
+  text-align: center;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.metric-card:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.metric-number {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.metric-label {
+  font-size: 0.9rem;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.risk-indicator {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.risk-high {
+  background-color: #dc3545;
+}
+.risk-medium {
+  background-color: #ffc107;
+}
+.risk-low {
+  background-color: #28a745;
+}
+
+.trend-arrow {
+  font-size: 1.2rem;
+  margin-left: 8px;
+}
+
+.trend-up {
+  color: #28a745;
+}
+.trend-down {
+  color: #dc3545;
+}
+.trend-stable {
+  color: #6c757d;
+}
+
+.analytics-table {
+  font-size: 0.9rem;
+}
+
+.analytics-table th {
+  background-color: #f8f9fa;
+  border-top: none;
+  font-weight: 600;
+  color: #495057;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+}
+
+.analytics-table td {
+  vertical-align: middle;
+  padding: 0.75rem 0.5rem;
+}
+
+.progress-thin {
+  height: 6px;
+  border-radius: 3px;
+}
+
+.badge-outline {
+  background-color: transparent;
+  border: 1px solid currentColor;
+}
+
+.student-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.pattern-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin: 0 1px;
+}
+
+.export-dropdown .dropdown-menu {
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border: none;
+}
+
+.export-dropdown .dropdown-item {
+  padding: 0.75rem 1rem;
+  transition: background-color 0.2s ease;
+}
+
+.export-dropdown .dropdown-item:hover {
+  background-color: #f8f9fa;
+  color: #007bff;
+}
+
+.analytics-insight {
+  background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+  border-left: 4px solid #2196f3;
+  border-radius: 0 8px 8px 0;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.analytics-insight .insight-icon {
+  font-size: 1.5rem;
+  color: #2196f3;
+  margin-right: 0.75rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .metric-card {
+    margin-bottom: 1rem;
+  }
+
+  .chart-container {
+    height: 250px;
+  }
+
+  .analytics-table {
+    font-size: 0.8rem;
+  }
+
+  .student-avatar {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* Print styles for reports */
+@media print {
+  .analytics-card {
+    box-shadow: none !important;
+    border: 1px solid #dee2e6 !important;
+  }
+
+  .bg-gradient-primary {
+    background: #007bff !important;
+    color: white !important;
+  }
+
+  .chart-container {
+    height: auto !important;
+  }
+
+  .btn,
+  .dropdown {
+    display: none !important;
+  }
+}
+
+/* Animation for loading states */
+.loading-shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Custom scrollbar for tables */
+.table-responsive::-webkit-scrollbar {
+  height: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}

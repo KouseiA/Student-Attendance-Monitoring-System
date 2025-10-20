@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2><i class="fas fa-edit me-2 text-primary"></i>Edit Attendance Record</h2>
+        <p class="text-muted mb-0">Modify attendance details and late arrival information</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-user me-2"></i>Attendance Details</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" id="editAttendanceForm">
+                    <div class="mb-3">
+                        <label class="form-label">Student</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-user"></i></span>
+                            <input type="text" class="form-control"
+                                value="{{ student.name }} ({{ student.student_number }})" readonly
+                                title="Student Name and Number">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Date</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                            <input type="text" class="form-control" value="{{ record.date }}" readonly
+                                title="Attendance Date">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-select" id="status" name="status" required onchange="toggleLateFields()">
+                            <option value="Present" {% if record.status=='Present' %}selected{% endif %}>Present
+                            </option>
+                            <option value="Late" {% if record.status=='Late' %}selected{% endif %}>Late</option>
+                            <option value="Absent" {% if record.status=='Absent' %}selected{% endif %}>Absent</option>
+                            <option value="Excused" {% if record.status=='Excused' %}selected{% endif %}>Excused
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="scan_time" class="form-label">Scan Time</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-clock"></i></span>
+                            <input type="time" class="form-control" id="scan_time" name="scan_time"
+                                value="{{ record.scan_time.strftime('%H:%M') if record.scan_time else '' }}" required>
+                        </div>
+                        <div class="form-text">Time when attendance was recorded</div>
+                    </div>
+
+                    <!-- Late Arrival Details Section -->
+                    <div id="lateDetailsSection"
+                        style="display: {% if record.status == 'Late' %}block{% else %}none{% endif %};">
+                        <div class="card bg-light mb-3">
+                            <div class="card-header bg-warning text-dark">
+                                <h6 class="mb-0"><i class="fas fa-clock me-2"></i>Late Arrival Details</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="arrival_time" class="form-label">Actual Arrival Time</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-clock"></i></span>
+                                        <input type="time" class="form-control" id="arrival_time" name="arrival_time"
+                                            value="{{ record.arrival_time.strftime('%H:%M') if record.arrival_time else '' }}">
+                                    </div>
+                                    <div class="form-text">Time when student actually arrived (leave blank to use scan
+                                        time)</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="late_minutes" class="form-label">Minutes Late</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-stopwatch"></i></span>
+                                        <input type="number" class="form-control" id="late_minutes" name="late_minutes"
+                                            value="{{ record.late_minutes if record.late_minutes else 0 }}" min="0">
+                                        <span class="input-group-text">minutes</span>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="notes" class="form-label">Notes</label>
+                                    <textarea class="form-control" id="notes" name="notes" rows="3"
+                                        placeholder="Optional notes about the late arrival...">{{ record.notes if record.notes else '' }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save me-2"></i>Save Changes
+                        </button>
+                        <a href="{{ url_for('attendance_records', class_id=record.class_id) }}"
+                            class="btn btn-secondary">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleLateFields() {
+        const status = document.getElementById('status').value;
+        const lateSection = document.getElementById('lateDetailsSection');
+
+        if (status === 'Late') {
+            lateSection.style.display = 'block';
+            // Set default arrival time if not set
+            const arrivalTimeInput = document.getElementById('arrival_time');
+            if (!arrivalTimeInput.value) {
+                const scanTime = document.getElementById('scan_time').value;
+                if (scanTime) {
+                    arrivalTimeInput.value = scanTime;
+                }
+            }
+        } else {
+            lateSection.style.display = 'none';
+        }
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function () {
+        toggleLateFields();
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,504 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4" role="region"
+    aria-labelledby="take-attendance-heading">
+    <div>
+        <h2 class="mb-1" id="take-attendance-heading"><i class="fas fa-qrcode me-2 text-primary"></i>Take Attendance
+        </h2>
+        <p class="text-muted mb-0">Class: <strong>{{ class_.name }}</strong></p>
+        {% if class_.start_time and class_.end_time %}
+        <small class="text-info">
+            <i class="fas fa-clock me-1"></i>
+            Schedule: {{ class_.start_time.strftime('%I:%M %p') }} - {{ class_.end_time.strftime('%I:%M %p') }}
+        </small>
+        {% endif %}
+    </div>
+    <a href="{{ url_for('view_classes') }}" class="btn btn-outline-primary" aria-label="Back to Classes">
+        <i class="fas fa-arrow-left me-2"></i>Back to Classes
+    </a>
+</div>
+<form method="post" id="date-form" class="mb-3">
+    <div class="row g-2 align-items-end">
+        <div class="col-auto">
+            <label for="attendance_date" class="form-label">Date:</label>
+            <input type="date" class="form-control" id="attendance_date" name="attendance_date"
+                value="{{ attendance_date|default('') }}" onchange="document.getElementById('date-form').submit();">
+        </div>
+    </div>
+</form>
+<!-- Main Content Row -->
+<div class="row">
+    <!-- Left Side: Attendance Status Cards -->
+    <div class="col-lg-6 col-md-12 mb-4">
+        <div class="row g-3">
+            <!-- Present Students -->
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-success text-white py-2 attendance-header-present">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <h6 class="mb-0">Present Students</h6>
+                            <span class="badge bg-light text-success ms-auto">{{ present_list|length }}</span>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush attendance-list-scroll-tall">
+                            {% for student, attendance in present_list %}
+                            <div class="list-group-item d-flex align-items-center py-2">
+                                <div class="me-2">
+                                    {% if student.photo_path %}
+                                    <img src="/{{ student.photo_path }}" alt="Photo of {{ student.name }}"
+                                        class="rounded-circle attendance-photo-small-present" width="30" height="30">
+                                    {% else %}
+                                    <div
+                                        class="rounded-circle bg-success d-flex align-items-center justify-content-center attendance-avatar-small-present">
+                                        {{ student.name[0].upper() }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-grow-1">
+                                    <small class="fw-bold">{{ student.name }}</small><br>
+                                    <small class="text-muted">{{ student.student_number }}</small>
+                                </div>
+                                <i class="fas fa-check-circle text-success"></i>
+                            </div>
+                            {% else %}
+                            <div class="list-group-item text-center text-muted py-3">
+                                <i class="fas fa-user-check mb-2 opacity-50"></i>
+                                <p class="mb-0 small">No present students</p>
+                                <small>Use QR scanner below</small>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Late Students -->
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-warning text-dark py-2">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-clock me-2"></i>
+                            <h6 class="mb-0">Late Arrivals</h6>
+                            <span class="badge bg-light text-warning ms-auto">{{ late_list|length }}</span>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush attendance-list-scroll-medium">
+                            {% for student, attendance in late_list %}
+                            <div class="list-group-item d-flex align-items-center py-2">
+                                <div class="me-2">
+                                    {% if student.photo_path %}
+                                    <img src="/{{ student.photo_path }}" alt="Photo of {{ student.name }}"
+                                        class="rounded-circle" width="25" height="25"
+                                        style="border: 2px solid #ffc107;">
+                                    {% else %}
+                                    <div class="rounded-circle bg-warning d-flex align-items-center justify-content-center"
+                                        style="width: 25px; height: 25px; color: #212529; font-weight: bold; font-size: 0.6rem;">
+                                        {{ student.name[0].upper() }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-grow-1">
+                                    <small class="fw-bold">{{ student.name }}</small><br>
+                                    <small class="text-muted">
+                                        {% set status_info = get_arrival_status(attendance.arrival_time,
+                                        class_.start_time) %}
+                                        <span class="{{ status_info.badge_class }}">
+                                            <i class="{{ status_info.icon }} me-1"></i>
+                                            {{ status_info.display_text }}
+                                        </span>
+                                        {% if attendance.arrival_time %}
+                                        <br><small class="text-muted">(arrived at {{
+                                            attendance.arrival_time.strftime('%H:%M') }})</small>
+                                        {% endif %}
+                                    </small>
+                                </div>
+                                <i class="fas fa-clock text-warning"></i>
+                            </div>
+                            {% else %}
+                            <div class="list-group-item text-center text-muted py-2">
+                                <small>No late arrivals</small>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <!-- Absent Students -->
+                <div class="col-sm-6">
+                    <div class="card">
+                        <div class="card-header bg-danger text-white py-2 attendance-header-absent">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-times-circle me-2"></i>
+                                <h6 class="mb-0">Absent</h6>
+                                <span class="badge bg-light text-danger ms-auto">{{ absent_list|length }}</span>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="list-group list-group-flush attendance-list-scroll-medium">
+                                {% for student, attendance in absent_list %}
+                                <div class="list-group-item d-flex align-items-center py-1">
+                                    <div class="me-2">
+                                        {% if student.photo_path %}
+                                        <img src="/{{ student.photo_path }}" alt="Photo of {{ student.name }}"
+                                            class="rounded-circle attendance-photo-small-absent" width="25" height="25">
+                                        {% else %}
+                                        <div
+                                            class="rounded-circle bg-danger d-flex align-items-center justify-content-center attendance-avatar-small-absent">
+                                            {{ student.name[0].upper() }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <small class="fw-bold">{{ student.name }}</small>
+                                    </div>
+                                </div>
+                                {% else %}
+                                <div class="list-group-item text-center text-muted py-2">
+                                    <small>No absent students</small>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Excused Students -->
+                <div class="col-sm-6">
+                    <div class="card">
+                        <div class="card-header bg-warning text-dark py-2 attendance-header-excused">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-exclamation-circle me-2"></i>
+                                <h6 class="mb-0">Excused</h6>
+                                <span class="badge bg-light text-warning ms-auto">{{ excused_list|length }}</span>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="list-group list-group-flush attendance-list-scroll-medium">
+                                {% for student, attendance in excused_list %}
+                                <div class="list-group-item d-flex align-items-center py-2">
+                                    <div class="me-2">
+                                        {% if student.photo_path %}
+                                        <img src="/{{ student.photo_path }}" alt="Photo of {{ student.name }}"
+                                            class="rounded-circle attendance-photo-small-excused" width="25"
+                                            height="25">
+                                        {% else %}
+                                        <div
+                                            class="rounded-circle bg-warning d-flex align-items-center justify-content-center attendance-avatar-small-excused">
+                                            {{ student.name[0].upper() }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <small class="fw-bold">{{ student.name }}</small>
+                                                {% if attendance.excuse_request_id %}
+                                                {% if attendance.excuse_request.status == 'Approved' %}
+                                                <br><span class="badge bg-success badge-sm">
+                                                    <i class="fas fa-check-circle me-1"></i>Approved Request
+                                                </span>
+                                                {% elif attendance.excuse_request.status == 'Disapproved' %}
+                                                <br><span class="badge bg-danger badge-sm">
+                                                    <i class="fas fa-times-circle me-1"></i>Request Denied
+                                                </span>
+                                                {% elif attendance.excuse_request.status == 'Pending' %}
+                                                <br><span class="badge bg-warning badge-sm text-dark">
+                                                    <i class="fas fa-clock me-1"></i>Pending Review
+                                                </span>
+                                                {% else %}
+                                                <br><span class="badge bg-warning badge-sm text-dark">
+                                                    <i class="fas fa-clock me-1"></i>Pending Review
+                                                </span>
+                                                {% endif %}
+                                                {% else %}
+                                                <br><span class="badge bg-warning badge-sm text-dark">
+                                                    <i class="fas fa-clock me-1"></i>Pending Documentation
+                                                </span>
+                                                {% endif %}
+                                            </div>
+                                            {% if attendance.excuse_request_id %}
+                                            <button class="btn btn-sm btn-outline-info" data-bs-toggle="tooltip"
+                                                title="View excuse details"
+                                                onclick="showExcuseDetails({{ attendance.excuse_request_id }})">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                        {% if attendance.notes %}
+                                        <small class="text-muted d-block mt-1">
+                                            <i class="fas fa-sticky-note me-1"></i>
+                                            {{ attendance.notes[:40] }}{% if attendance.notes|length > 40 %}...{% endif
+                                            %}
+                                        </small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% else %}
+                                <div class="list-group-item text-center text-muted py-2">
+                                    <small>No excused students</small>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Side: QR Scanner and Manual Attendance -->
+    <div class="col-lg-6 col-md-12">
+        <div class="row g-3">
+            <!-- QR Scanner -->
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-qrcode me-2 text-primary"></i>
+                            <h5 class="mb-0">QR Code Scanner</h5>
+                        </div>
+                        <p class="text-muted mb-0 small">Point camera at student's QR code to mark present</p>
+                    </div>
+                    <div class="card-body">
+                        <div id="qr-reader" class="qr-reader"></div>
+                        <form id="qr-form" method="post" class="d-none">
+                            <input type="hidden" name="qr_data" id="qr_data">
+                            <input type="hidden" name="attendance_date" value="{{ attendance_date|default('') }}">
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Auto-Mark Absent Section -->
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-danger text-white">
+                        <i class="fas fa-magic me-2"></i>Auto-Mark Absent
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted mb-3">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Automatically mark all students who didn't attend this class as "Absent".
+                            This only works if the class has ended (current time > end time).
+                        </p>
+
+                        {% if class_.end_time %}
+                        <div class="alert alert-info alert-sm" role="alert">
+                            <i class="fas fa-clock me-1"></i>
+                            <strong>Class Schedule:</strong> {{ class_.start_time.strftime('%I:%M %p') }} - {{
+                            class_.end_time.strftime('%I:%M %p') }}
+                            <br>
+                            <small class="text-muted">
+                                {% set class_status = get_class_status(class_.start_time, class_.end_time) %}
+                                {% if class_status == 'upcoming' %}
+                                <span class="badge bg-secondary">Class hasn't started yet</span>
+                                {% elif class_status == 'in_session' %}
+                                <span class="badge bg-success">Class in session</span>
+                                {% else %}
+                                <span class="badge bg-primary">Class has ended</span>
+                                {% endif %}
+                            </small>
+                        </div>
+                        {% endif %}
+
+                        <form method="post"
+                            onsubmit="return confirm('Are you sure you want to automatically mark all non-attending students as absent for {{ attendance_date }}?')">
+                            <input type="hidden" name="attendance_date" value="{{ attendance_date|default('') }}">
+                            <button type="submit" name="auto_mark_absent" value="true" class="btn btn-danger">
+                                <i class="fas fa-users-slash me-2"></i>Auto-Mark Absent Students
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Manual Attendance -->
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-edit me-2"></i>Manual Attendance
+                    </div>
+                    <div class="card-body">
+                        <form method="post" id="manual-form">
+                            <div class="mb-3">
+                                <label for="manual_student_id" class="form-label">Select Student</label>
+                                <select class="form-select" id="manual_student_id" name="manual_student_id" required>
+                                    <option value="" disabled selected>Choose a student...</option>
+                                    {% for student in students %}
+                                    <option value="{{ student.id }}">{{ student.name }} ({{ student.student_number }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Late Arrival Time Input (shown when Late is selected) -->
+                            <div class="mb-3" id="late-time-section" style="display: none;">
+                                <label for="manual_arrival_time" class="form-label">Arrival Time</label>
+                                <input type="time" class="form-control" id="manual_arrival_time"
+                                    name="manual_arrival_time">
+                                <div class="form-text">Optional: Leave blank to use current time</div>
+                            </div>
+
+                            <!-- Notes Section (for late arrivals) -->
+                            <div class="mb-3" id="notes-section" style="display: none;">
+                                <label for="manual_notes" class="form-label">Notes</label>
+                                <textarea class="form-control" id="manual_notes" name="manual_notes" rows="2"
+                                    placeholder="Optional notes (e.g., reason for being late)"></textarea>
+                            </div>
+
+                            <input type="hidden" name="attendance_date" value="{{ attendance_date|default('') }}">
+                            <div class="d-grid gap-2">
+                                <button type="submit" name="manual_status" value="Late" class="btn btn-warning btn-sm"
+                                    onclick="showLateFields()" onmouseover="showLateFields()">
+                                    <i class="fas fa-clock me-1"></i>Mark Late
+                                </button>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <button type="submit" name="manual_status" value="Absent"
+                                            class="btn btn-danger btn-sm w-100" onclick="hideLateFields()">
+                                            <i class="fas fa-times me-1"></i>Mark Absent
+                                        </button>
+                                    </div>
+                                    <div class="col-6">
+                                        <button type="submit" name="manual_status" value="Excused"
+                                            class="btn btn-secondary btn-sm w-100" onclick="hideLateFields()">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>Mark Excused
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Excuse Request Option -->
+                                <div class="mt-2">
+                                    <small class="text-muted d-block mb-2">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        For proper excuse with documentation:
+                                    </small>
+                                    <a href="{{ url_for('submit_excuse_request') }}"
+                                        class="btn btn-outline-info btn-sm w-100">
+                                        <i class="fas fa-file-medical me-1"></i>Submit Excuse Request
+                                    </a>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Excuse Details Modal -->
+<div class="modal fade" id="excuseDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-file-medical me-2"></i>Excuse Request Details
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="excuseDetailsContent">
+                <div class="text-center py-3">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/html5-qrcode.min.js') }}"></script>
+<script>
+    function onScanSuccess(decodedText, decodedResult) {
+        document.getElementById('qr_data').value = decodedText;
+        document.getElementById('qr-form').submit();
+    }
+
+    let html5QrcodeScanner = new Html5QrcodeScanner(
+        "qr-reader", { fps: 10, qrbox: 250 });
+    html5QrcodeScanner.render(onScanSuccess);
+
+    // Late arrival form field management
+    function showLateFields() {
+        document.getElementById('late-time-section').style.display = 'block';
+        document.getElementById('notes-section').style.display = 'block';
+
+        // Set default time to current time
+        const now = new Date();
+        const timeStr = now.getHours().toString().padStart(2, '0') + ':' +
+            now.getMinutes().toString().padStart(2, '0');
+        document.getElementById('manual_arrival_time').value = timeStr;
+    }
+
+    function hideLateFields() {
+        document.getElementById('late-time-section').style.display = 'none';
+        document.getElementById('notes-section').style.display = 'none';
+        document.getElementById('manual_arrival_time').value = '';
+        document.getElementById('manual_notes').value = '';
+    }
+
+    // Form validation
+    document.getElementById('manual-form').addEventListener('submit', function (e) {
+        const status = e.submitter.value;
+        if (status === 'Late') {
+            const timeInput = document.getElementById('manual_arrival_time').value;
+            if (!timeInput) {
+                // Allow empty time, will use current time
+                console.log('Using current time for late arrival');
+            }
+        }
+    });
+
+    // Show excuse details function
+    function showExcuseDetails(excuseRequestId) {
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('excuseDetailsModal'));
+        modal.show();
+
+        // Fetch excuse details via AJAX (you can implement this endpoint)
+        fetch(`/excuse-requests/${excuseRequestId}/details`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('excuseDetailsContent').innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-primary"><i class="fas fa-user me-1"></i>Student Information</h6>
+                            <p><strong>Name:</strong> ${data.student_name}</p>
+                            <p><strong>Student Number:</strong> ${data.student_number}</p>
+                            <p><strong>Absence Date:</strong> ${data.absence_date}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-success"><i class="fas fa-check-circle me-1"></i>Request Status</h6>
+                            <p><span class="badge bg-success">Approved</span></p>
+                            <p><strong>Reviewed:</strong> ${data.reviewed_at}</p>
+                            ${data.teacher_notes ? `<p><strong>Teacher Notes:</strong> ${data.teacher_notes}</p>` : ''}
+                        </div>
+                    </div>
+                    <hr>
+                    <h6 class="text-info"><i class="fas fa-file-alt me-1"></i>Reason for Absence</h6>
+                    <p class="bg-light p-3 rounded">${data.reason}</p>
+                    ${data.excuse_letter_path ? `
+                        <h6 class="text-warning"><i class="fas fa-paperclip me-1"></i>Supporting Document</h6>
+                        <a href="/${data.excuse_letter_path}" target="_blank" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-download me-1"></i>Download Excuse Letter
+                        </a>
+                    ` : ''}
+                `;
+            })
+            .catch(error => {
+                document.getElementById('excuseDetailsContent').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        Error loading excuse details. Please try again.
+                    </div>
+                `;
+            });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,10 @@
+Flask
+Flask-Login
+Flask-SQLAlchemy
+qrcode
+Pillow
+Werkzeug
+pandas
+numpy
+matplotlib
+seaborn 

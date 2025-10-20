@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2><i class="fas fa-file-upload me-2 text-success"></i>Submit Excuse Request</h2>
+        <p class="text-muted mb-0">Submit an excuse request for an absence with supporting documents</p>
+    </div>
+    <a href="{{ url_for('manage_excuse_requests') }}" class="btn btn-outline-primary">
+        <i class="fas fa-arrow-left me-2"></i>Back to Requests
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-file-medical me-2"></i>Excuse Request Form</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="student_id" class="form-label">Student *</label>
+                            <select class="form-select" id="student_id" name="student_id" required>
+                                <option value="" disabled selected>Choose a student...</option>
+                                {% for student in students %}
+                                <option value="{{ student.id }}">{{ student.name }} ({{ student.student_number }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="class_id" class="form-label">Class *</label>
+                            <select class="form-select" id="class_id" name="class_id" required>
+                                <option value="" disabled selected>Choose a class...</option>
+                                {% for class in classes %}
+                                <option value="{{ class.id }}">{{ class.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="absence_date" class="form-label">Absence Date *</label>
+                        <input type="date" class="form-control" id="absence_date" name="absence_date" required>
+                        <div class="form-text">Select the date when the student was absent</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="reason" class="form-label">Reason for Absence *</label>
+                        <textarea class="form-control" id="reason" name="reason" rows="4" required
+                            placeholder="Please provide a detailed explanation for the absence..."></textarea>
+                        <div class="form-text">Be specific and detailed about the reason for absence</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="excuse_letter" class="form-label">Supporting Document</label>
+                        <input type="file" class="form-control" id="excuse_letter" name="excuse_letter"
+                            accept=".jpg,.jpeg,.png,.gif,.pdf">
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Optional: Upload a medical certificate, parent note, or other supporting document.
+                            Accepted formats: JPG, PNG, GIF, PDF (max 16MB)
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info" role="alert">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Important Notes:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Excuse requests must be submitted within 7 days of the absence</li>
+                            <li>All fields marked with * are required</li>
+                            <li>The teacher will review your request and approve or disapprove it</li>
+                            <li>You will receive notification once the request is reviewed</li>
+                        </ul>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('manage_excuse_requests') }}" class="btn btn-secondary me-md-2">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-paper-plane me-2"></i>Submit Request
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Recent Requests -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-history me-2"></i>Recent Submissions</h6>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small">
+                    <i class="fas fa-clock me-1"></i>
+                    Your recent excuse requests will appear here once submitted.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Set max date to today for absence date
+    document.addEventListener('DOMContentLoaded', function () {
+        const today = new Date();
+        const maxDate = today.toISOString().split('T')[0];
+        document.getElementById('absence_date').setAttribute('max', maxDate);
+
+        // Set default date to yesterday (common use case)
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const defaultDate = yesterday.toISOString().split('T')[0];
+        document.getElementById('absence_date').value = defaultDate;
+    });
+
+    // File upload validation
+    document.getElementById('excuse_letter').addEventListener('change', function () {
+        const file = this.files[0];
+        const maxSize = 16 * 1024 * 1024; // 16MB
+
+        if (file && file.size > maxSize) {
+            alert('File size must be less than 16MB');
+            this.value = '';
+        }
+    });
+</script>
+{% endblock %}

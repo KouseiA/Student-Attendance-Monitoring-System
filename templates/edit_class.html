@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2><i class="fas fa-edit me-2 text-primary"></i>Edit Class</h2>
+        <p class="text-muted mb-0">Modify class information and schedule</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chalkboard-teacher me-2"></i>Class Information</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Class Name *</label>
+                        <input type="text" class="form-control" id="name" name="name" value="{{ class_.name }}"
+                            required>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="start_time" class="form-label">Start Time</label>
+                            <input type="time" class="form-control" id="start_time" name="start_time"
+                                value="{{ class_.start_time.strftime('%H:%M') if class_.start_time else '08:00' }}"
+                                required>
+                            <div class="form-text">When does this class begin?</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="end_time" class="form-label">End Time</label>
+                            <input type="time" class="form-control" id="end_time" name="end_time"
+                                value="{{ class_.end_time.strftime('%H:%M') if class_.end_time else '17:00' }}"
+                                required>
+                            <div class="form-text">When does this class end?</div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info" role="alert">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Current Schedule:</strong>
+                        {% if class_.start_time and class_.end_time %}
+                        {{ class_.start_time.strftime('%I:%M %p') }} - {{ class_.end_time.strftime('%I:%M %p') }}
+                        {% else %}
+                        Default schedule (8:00 AM - 5:00 PM)
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Update Class
+                        </button>
+                        <a href="{{ url_for('view_classes') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Classes
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

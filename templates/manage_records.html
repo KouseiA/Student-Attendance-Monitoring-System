@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2 id="attendance-records-heading">Attendance Records</h2>
+<div class="row mb-3 align-items-end g-2" role="search" aria-label="Attendance record filters">
+    <div class="col-md-3">
+        <label for="class_id" class="form-label">Class:</label>
+        <select class="form-select" id="class_id" name="class_id" aria-label="Select class">
+            <option value="">All Classes</option>
+            {% for class_ in classes %}
+            <option value="{{ class_.id }}" {% if class_id and class_id|int==class_.id %}selected{% endif %}>{{
+                class_.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label for="date" class="form-label">Date:</label>
+        <input type="date" class="form-control" id="date" name="date" value="{{ date_filter or '' }}"
+            aria-label="Select date">
+    </div>
+    <div class="col-md-3 d-flex align-items-end">
+        <input type="text" id="record-search" class="form-control w-100"
+            placeholder="Search by student name or number..." aria-label="Search by student name or number">
+    </div>
+    <div class="col-md-3 d-flex align-items-end">
+        <form method="post" action="{{ url_for('export_manage_records') }}" id="export-form" class="w-100">
+            <input type="hidden" name="class_id" value="{{ class_id or '' }}" id="export-class-id">
+            <input type="hidden" name="date" value="{{ date_filter or '' }}" id="export-date">
+            <button type="submit" class="btn btn-success w-100" aria-label="Export attendance records as CSV">Export as
+                CSV</button>
+        </form>
+    </div>
+</div>
+{# Attendance summary #}
+<div class="mb-3">
+    <span class="badge bg-success me-2" style="background-color:#198754 !important; color:#fff;">Present: {{ present
+        }}</span>
+    <span class="badge bg-danger me-2" style="background-color:#dc3545 !important; color:#fff;">Absent: {{ absent
+        }}</span>
+    <span class="badge bg-warning text-dark" style="background-color:#ffc107 !important; color:#212529;">Excused: {{
+        excused }}</span>
+</div>
+<table class="table table-bordered" id="records-table" aria-describedby="attendance-records-heading">
+    <thead class="table-light">
+        <tr>
+            <th scope="col">Class</th>
+            <th scope="col">Student Name</th>
+            <th scope="col">Student Number</th>
+            <th scope="col">Date</th>
+            <th scope="col">Scan Time</th>
+            <th scope="col">Status</th>
+            <th scope="col">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for record in records %}
+        <tr>
+            <td>{{ class_dict[record.class_id].name if record.class_id in class_dict else '' }}</td>
+            <td>{{ students[record.student_id].name if record.student_id in students else '' }}</td>
+            <td>{{ students[record.student_id].student_number if record.student_id in students else '' }}</td>
+            <td>{{ record.date }}</td>
+            <td>{{ record.scan_time.strftime('%H:%M:%S') if record.scan_time else '' }}</td>
+            <td>{{ record.status }}</td>
+            <td>
+                <a href="{{ url_for('edit_attendance', attendance_id=record.id) }}" class="btn btn-primary btn-sm"
+                    aria-label="Edit attendance for {{ students[record.student_id].name if record.student_id in students else '' }}">Edit</a>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="7">No records found.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<!-- Pagination Controls -->
+{% if total_pages > 1 %}
+<nav aria-label="Attendance record pages" class="my-3">
+    <ul class="pagination justify-content-center">
+        <li class="page-item {% if page == 1 %}disabled{% endif %}">
+            <a class="page-link"
+                href="?page={{ page-1 }}{% if class_id %}&class_id={{ class_id }}{% endif %}{% if date_filter %}&date={{ date_filter }}{% endif %}">Previous</a>
+        </li>
+        {% for p in range(1, total_pages+1) %}
+        <li class="page-item {% if p == page %}active{% endif %}">
+            <a class="page-link"
+                href="?page={{ p }}{% if class_id %}&class_id={{ class_id }}{% endif %}{% if date_filter %}&date={{ date_filter }}{% endif %}">{{
+                p }}</a>
+        </li>
+        {% endfor %}
+        <li class="page-item {% if page == total_pages %}disabled{% endif %}">
+            <a class="page-link"
+                href="?page={{ page+1 }}{% if class_id %}&class_id={{ class_id }}{% endif %}{% if date_filter %}&date={{ date_filter }}{% endif %}">Next</a>
+        </li>
+    </ul>
+</nav>
+{% endif %}
+<a href="{{ url_for('dashboard') }}" class="btn btn-secondary" aria-label="Back to Dashboard">Back to Dashboard</a>
+
+<script>
+    // Real-time filtering functionality
+    function applyFilters() {
+        const classId = document.getElementById('class_id').value;
+        const date = document.getElementById('date').value;
+
+        // Build URL with query parameters
+        const params = new URLSearchParams();
+        if (classId) {
+            params.append('class_id', classId);
+        }
+        if (date) {
+            params.append('date', date);
+        }
+
+        // Update export form hidden fields
+        document.getElementById('export-class-id').value = classId || '';
+        document.getElementById('export-date').value = date || '';
+
+        // Redirect to same page with new filter parameters
+        const baseUrl = window.location.pathname;
+        const newUrl = params.toString() ? `${baseUrl}?${params.toString()}` : baseUrl;
+        window.location.href = newUrl;
+    }
+
+    // Add event listeners for real-time filtering
+    document.getElementById('class_id').addEventListener('change', applyFilters);
+    document.getElementById('date').addEventListener('change', applyFilters);
+
+    // Optional: Add small delay for date input to prevent too many requests while typing
+    let dateTimeout;
+    document.getElementById('date').addEventListener('input', function () {
+        clearTimeout(dateTimeout);
+        dateTimeout = setTimeout(applyFilters, 500); // 500ms delay
+    });
+
+    // Attendance record search filter
+    document.getElementById('record-search').addEventListener('input', function () {
+        const search = this.value.toLowerCase();
+        const rows = document.querySelectorAll('#records-table tbody tr');
+        rows.forEach(row => {
+            const name = row.querySelector('td:nth-child(2)')?.textContent.toLowerCase() || '';
+            const number = row.querySelector('td:nth-child(3)')?.textContent.toLowerCase() || '';
+            if (name.includes(search) || number.includes(search)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+</script>
+
+{% endblock %}
